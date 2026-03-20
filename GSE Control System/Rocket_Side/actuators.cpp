@@ -13,7 +13,7 @@ void initActuators(Servo servos[])
   {
     servos[i].attach(servoPins[i]);
     servos[i].write(servoClosed);
-    delay(250);
+    delay(50);
     servos[i].detach();
   }
 

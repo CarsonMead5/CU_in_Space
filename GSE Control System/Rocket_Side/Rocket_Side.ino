@@ -31,30 +31,30 @@
 // LoRa transceiver
 RH_RF95 LoRa(LoRa_CS, LoRa_INT);
 // Array of servo objects
-// Servo servos[NUM_SERVO];
+Servo servos[NUM_SERVO];
 // // Load cell object
-// HX711 loadCell;
+HX711 loadCell;
 // Struct to send telemetry to ground station
-TelemetryPacket telemetry = {0};
+TelemetryPacket telemetry = { 0 };
 // Struct to send commands to the rocket
-CommandPacket command = {0};
+CommandPacket command = { 0 };
 
 // -------------------------------
 // Initializing Key Variables
 // -------------------------------
 
 // Used for calibrating sensors
-// float PT_MinV[NUM_PT] = {0.0,0.0,0.0};
+float PT_MinV[NUM_PT] = { 0.0, 0.0, 0.0 };
 // // Used for taring load cell
-// long loadCellOffset = 0; // Number of bins offset
+long loadCellOffset = 0;  // Number of bins offset
 // // Used for attaching and detaching servo motors to arduino pins (reduces twitchiness)
-// bool servoAttachState[NUM_SERVO] = {false,false,false,false};
-// uint16_t servoActuationStart[NUM_SERVO] = {0,0,0,0};
+bool servoAttachState[NUM_SERVO] = { false, false, false, false };
+uint16_t servoActuationStart[NUM_SERVO] = { 0, 0, 0, 0 };
 // // Initializing previous command packet to eliminate duplicate sent commands
-CommandPacket lastCommand = {0};
+CommandPacket lastCommand = { 0 };
 // // Initializing failsafe to close servos if no commands are sent
-// uint16_t lastCommandTime = 0;
-// uint16_t lastTelemetrySent = 0;
+uint16_t lastCommandTime = 0;
+uint16_t lastTelemetrySent = 0;
 
 
 // -------------------------------
@@ -63,16 +63,38 @@ CommandPacket lastCommand = {0};
 void setup() {
 
   // Opening Serial Monitor (For Debugging)
-  Serial.begin(9600); // Baud Rate = 9600 bits/s
-
+  Serial.begin(115200);  // Baud Rate = 9600 bits/s
+  delay(1000);
   // Initializing the LoRa Transceiver
-  initLoRa(LoRa);
+  pinMode(LoRa_RST, OUTPUT);
+  digitalWrite(LoRa_RST, HIGH);
+  
+  // Reset radio
+  digitalWrite(LoRa_RST, LOW);
+  delay(10);
+  digitalWrite(LoRa_RST, HIGH);
+  delay(10);
+  SPI.begin();
+  if (!LoRa.init()) {
+    Serial.println("LoRa init failed");
+    while (1)
+      ;
+  }
+
+  // --- THE MISSING CRITICAL SETTINGS ---
+  Serial.println("Configuring LoRa Parameters...");
+  LoRa.setFrequency(915.0);  // Match ground station!
+  LoRa.setTxPower(19, false);
+  LoRa.setSpreadingFactor(7);
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setCodingRate4(5);
+  LoRa.setModeRx();  // Explicitly start listening
 
   // Initializing Sensors
-  // initSensors(loadCell, loadCellOffset, PT_MinV);
+  initSensors(loadCell, loadCellOffset, PT_MinV);
 
   // Initializing Actuators
-  // initActuators(servos);
+  initActuators(servos);
 
   // Printing to Console State
   Serial.println("Rocket-Side Arduino Ready");
@@ -84,35 +106,61 @@ void setup() {
 // -------------------------------
 void loop() {
 
-  // Acting on Commands
-  // If statement is not entered if no commands were received or packets did not pass crc check
-  if (receiveCommands(LoRa, command, lastCommand))
-  {
-    // applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
+  //   Reading Sensors
+  readSensors(loadCell, loadCellOffset, PT_MinV, telemetry);
 
-    // Taring load cell if commanded
-    //if (command.tareLoadCellState != lastCommand.tareLoadCellState && command.tareLoadCellState == true)
-    //{
-      //loadCellOffset = tareLoadCell(loadCell);
-    //}
+  //   Reading Actuator States
+  readActuatorStates(servos, telemetry);
+
+  //   Reading Current Time
+  telemetry.timestamp = millis();
+
+  bool avail_flag = false;  // Default state is false
+  if (LoRa.available()) {
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(buf);
+
+    if (LoRa.recv(buf, &len)) {
+      // 1. Check if the received length matches our struct size
+      if (len != sizeof(CommandPacket)) {
+        Serial.println("Error: Packet size mismatch");
+        avail_flag = false;
+      } else {
+        // 2. Temporarily hold data to verify CRC (ONLY runs if size is correct)
+        CommandPacket temp;
+        memcpy(&temp, buf, sizeof(CommandPacket));
+
+        // 3. Extract and verify CRC
+        uint16_t sentCRC = temp.crc;
+        temp.crc = 0;  // Clear it for calculation
+        uint16_t computedCRC = computeCRC16((uint8_t*)&temp, sizeof(CommandPacket) - sizeof(temp.crc));
+
+        if (sentCRC == computedCRC) {
+          lastCommand = command;  // Save previous state
+          command = temp;         // Update current state
+          command.crc = sentCRC;  // Put the CRC back for debugging
+
+          debugReceive(command);
+          avail_flag = true;  // Packet is verified and ready!
+        } else {
+          Serial.println("Error: CRC Failure");
+          avail_flag = false;
+        }
+      }
+    }
   }
 
-  // Sending Telemetry every 20 ms minimum
-  // if (millis() - lastTelemetrySent > 20)
-  // {
-    // Reading Sensors
-  //  readSensors(loadCell, loadCellOffset, PT_MinV, telemetry);
+  // Acting on Commands
+  // If statement is not entered if no commands were received or packets did not pass crc check
+  if (avail_flag) {
+    applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
 
-    // Reading Actuator States
-  //  readActuatorStates(servos, telemetry);
 
-    // Reading Current Time
-  //  telemetry.timestamp = millis();
-
-    // Send Telemetry Data over LoRa
-    //sendTelemetry(LoRa,telemetry);
-  // }
-
-  // Detaching servos if they have finished moving
-  // updateServos(servos, servoAttachState, servoActuationStart);
+    // Taring load cell if commanded
+    if (command.tareLoadCellState != lastCommand.tareLoadCellState && command.tareLoadCellState == true) {
+      loadCellOffset = tareLoadCell(loadCell);
+    }
+    sendTelemetry(LoRa, telemetry);
+  }
+  updateServos(servos, servoAttachState, servoActuationStart);  // always detach servos 250 ms after actuating
 }
