@@ -1,167 +1,71 @@
-// Testing Two-Way LoRa Communication
-// Contributors: Carson Mead
-// Rocket Side: Load Cell Measurements and Servo Actuation
-
-// Including Necessary Libraries
-#include <RH_RF95.h>
 #include <SPI.h>
-#include <Servo.h>
-#include <HX711.h>
+#include <RH_RF95.h>
 
-// Pin Numbers
-#define LoRa_CS 10
-#define LoRa_RST 9
-#define LoRa_INT 2
-#define LoadCell_DT 4
-#define LoadCell_CLK 3
+#define RFM95_CS 10
+#define RFM95_RST 9
+#define RFM95_INT 2
+#define RF95_FREQ 915.0
 
-// Initializing Objects
-const int NumServos 2;
-Servo servos[NumServos];
-RH_RF95 LoRa(LoRa_CS,LoRa_INT);
-HX711 LoadCell;
+RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-// Defining Telemetry Packet
-struct TelemetryPacket {
-  float loadCell;
-  float pressures; // Just incremented numbers to print
-  float pressure2; // Just incremented numbers to print
-  float pressure3; // Just incremented numbers to print
-};
-// Initializing Command Packet
-TelemetryPacket telemetry = {0.0,0.0,0.0,0.0};
+float responseValue = 100.0;
 
-// Defining Command Packet
-struct CommandPacket {
-  bool servo1State;
-  bool servo2State;
-};
-// Initializing Command Packet
-CommandPacket command = {0,0};
-
-// Key Problem Variables
-long LCoffset = 0;
-float LCcalibrationFactor = 4299.18;
-int servoPos[2] = [-1,-1];
-bool servoAttached[2] = [false,false]
-int open = 0;
-int closed = 65;
-
-
-// Main Setup
 void setup() {
-  
-  // Opening Serial Monitor
+  pinMode(RFM95_RST, OUTPUT);
+  digitalWrite(RFM95_RST, HIGH);
+
   Serial.begin(9600);
-
-  // Attaching Servos
-  servo1.attach(Servo1_Pin);
-  servoAttached[0] = true;
-  servo2.attach(Servo2_Pin);
-  servoAttached[0] = true;
-
-  // Initializing LoadCell
-  loadCell.begin(LoadCell_DT, LoadCell_CLK);
-  while (!loadCell.is_ready()) {
-    Serial.println("Waiting for HX711");
-    delay(100);
-  }
   delay(1000);
-  Serial.println("Remove all load...");
-  delay(3000);
-  LCoffset = loadCell.read_average(20);
-  Serial.print("Offset value: ");
-  Serial.println(LCoffset);
 
-  // Initializing LoRa
-  pinMode(LoRa_RST, OUTPUT);
-  digitalWrite(LoRa_RST, HIGH);
+  // Reset radio
+  digitalWrite(RFM95_RST, LOW);
   delay(10);
-  digitalWrite(LoRa_RST, LOW);
+  digitalWrite(RFM95_RST, HIGH);
   delay(10);
-  digitalWrite(LoRa_RST, HIGH);
 
-  // Initializing SPI Protocol
   SPI.begin();
 
-  // Edge Case that LoRa Initialization Failed
-  if (!LoRa.init()) {
-    Serial.println("LoRa Initialization Failed");
-    while(1);
+  if (!rf95.init()) {
+    Serial.println("LoRa init failed");
+    while (1);
   }
 
-  // Setting LoRa Parameters
-  LoRa.setFrequency(LoRa_Freq);
-  LoRa.setTxPower(23, false);
+  rf95.setFrequency(RF95_FREQ);
+  rf95.setTxPower(23, false);
 
-  // Printing System is Ready
-  Serial.println("LoRa Transmitter Ready");
+  // Match settings exactly
+  rf95.setSpreadingFactor(7);
+  rf95.setSignalBandwidth(125E3);
+  rf95.setCodingRate4(5);
+
+  rf95.setModeRx();
+
+  Serial.println("Rocket Ready");
 }
 
 void loop() {
-  
-  readCommands();
-
-  updateServos();
-
-  readLoadCell();
-
-  sendTelemetry();
-
-}
-
-****************************
-// Functions
-****************************
-
-void readCommands()
-{
-
-  if (LoRa.available())
-  {
-    uint8_t buf[sizeof(CommandPacket)];
+  if (rf95.available()) {
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
     uint8_t len = sizeof(buf);
 
-    if (LoRa.recv(buf, &len))
-    {
-      // Checks against corrupted packets
-      if (len == sizeof(CommandPacket))
-      {
-        // Copies packet into struct
-        memcpy(&command, buf, sizeof(CommandPacket));
+    if (rf95.recv(buf, &len) && len == sizeof(float)) {
+      float receivedValue;
+      memcpy(&receivedValue, buf, sizeof(receivedValue));
 
-        Serial.print("Servo1 Command: ");
-        Serial.println(command.servo1State);
+      Serial.print("Received: ");
+      Serial.println(receivedValue);
 
-        Serial.print("Servo2 Command: ");
-        Serial.println(command.servo2State);
-      }
+      // ---------------- RESPOND ----------------
+      Serial.print("Sending back: ");
+      Serial.println(responseValue);
+
+      rf95.send((uint8_t*)&responseValue, sizeof(responseValue));
+      rf95.waitPacketSent();
+
+      // 🔴 CRITICAL
+      rf95.setModeRx();
+
+      responseValue += 1.0f;
     }
   }
-
 }
-
-void updateServos()
-{
-  int servo1Command = command.servo1State ? open : closed;
-  int servo2Command = command.servo2State ? open : closed;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
