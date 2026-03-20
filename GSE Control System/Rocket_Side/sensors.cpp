@@ -6,17 +6,21 @@
 // Initializing all sensors (pressure transducers, load cell)
 void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
 {
+    // Serial.println("sensors 9");
   // Initializing load cell communication through HX711
   loadCell.begin(loadCell_DT, loadCell_CLK);
+  // Serial.println("sensors 12");
 
   // Taring load cell
   loadCellOffset = tareLoadCell(loadCell);
+  // Serial.println("sensors 16");
 
   // Calibrating pressure transducers
   for (uint8_t i=0; i<NUM_PT; i++)
   {
     PT_MinV[i] = calibratePressure(pressurePins[i]);
   }
+  // Serial.println("sensors 21");
 }
 
 
@@ -27,8 +31,9 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
 // Reminder: All values are 100x to retain 2 decimal places
 void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], TelemetryPacket &t)
 {
+  // Serial.println("34");
   // Reading raw load cell bin output
-  long raw = loadCell.read_average(3);
+  long raw = 5;//loadCell.read_average(3);
   // Offseting raw output
   long corrected = raw - loadCellOffset;
   // Calculating load cell lb measurement
@@ -81,6 +86,7 @@ float calibratePressure(uint8_t Pin_Num)
 // Taring the load cell 
 long tareLoadCell(HX711 &loadCell)
 {
-  long offset = loadCell.read_average(20);
+  long offset = -5 ; // loadcell.read_average(5)
+
   return offset;
 }

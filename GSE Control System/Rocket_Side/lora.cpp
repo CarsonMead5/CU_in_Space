@@ -3,19 +3,21 @@
 // -------------------------------
 // initLoRa() Function
 // -------------------------------
-// Initializes LoRa Transceiver
 void initLoRa(RH_RF95 &LoRa)
 {
-  // Manually resetting LoRa
+  // 1. Explicitly hold the reset pin HIGH to keep it awake
   pinMode(LoRa_RST, OUTPUT);
+  digitalWrite(LoRa_RST, HIGH);
+  // 3. The 10ms hardware reset pulse
   digitalWrite(LoRa_RST, LOW);
   delay(10);
   digitalWrite(LoRa_RST, HIGH);
   delay(10);
 
+  // 4. Start communication
   SPI.begin();
+  delay(1000);
 
-  // Checking LoRa Initialization
   if (!LoRa.init())
   {
     Serial.println("LoRa Initialization Failed");
@@ -127,10 +129,6 @@ void debugReceive(const CommandPacket &cmd)
   Serial.println(cmd.crc);
 }
 
-// -------------------------------
-// debugSend() Function
-// -------------------------------
-// Debugging function that prints out all sent telemetry to serial monitor
 void debugSend(const TelemetryPacket &t)
 {
   Serial.println("Telemetry Sent:");
