@@ -8,7 +8,20 @@
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-float responseValue = 100.0;
+// --- STRUCT DEFINITIONS ---
+struct __attribute__((packed)) GroundTXPacket {
+  bool bool1; 1 to 5, 7 8
+  bool bool2;
+};
+
+struct __attribute__((packed)) RocketTXPacket {
+  float float1; 
+  float float2;    
+};
+
+// Instances for handling data
+GroundTXPacket incomingGroundData;
+RocketTXPacket rocketData = {0.0, 0.0};
 
 void setup() {
   pinMode(RFM95_RST, OUTPUT);
@@ -31,7 +44,7 @@ void setup() {
   }
 
   rf95.setFrequency(RF95_FREQ);
-  rf95.setTxPower(23, false);
+  rf95.setTxPower(19, false);
 
   // Match settings exactly
   rf95.setSpreadingFactor(7);
@@ -39,7 +52,6 @@ void setup() {
   rf95.setCodingRate4(5);
 
   rf95.setModeRx();
-
   Serial.println("Rocket Ready");
 }
 
@@ -48,24 +60,29 @@ void loop() {
     uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
     uint8_t len = sizeof(buf);
 
-    if (rf95.recv(buf, &len) && len == sizeof(float)) {
-      float receivedValue;
-      memcpy(&receivedValue, buf, sizeof(receivedValue));
+    // 1. RECEIVE: Look for GroundTXPacket size
+    if (rf95.recv(buf, &len) && len == sizeof(GroundTXPacket)) {
+      memcpy(&incomingGroundData, buf, sizeof(GroundTXPacket));
 
-      Serial.print("Received: ");
-      Serial.println(receivedValue);
+      Serial.print("Received from Ground! B1: ");
+      Serial.print(incomingGroundData.bool1);
+      Serial.print(" B2: ");
+      Serial.println(incomingGroundData.bool2);
 
-      // ---------------- RESPOND ----------------
-      Serial.print("Sending back: ");
-      Serial.println(responseValue);
+      // --- UPDATE ROCKET DATA ---
+      // Update your floats based on sensors or logic
+      rocketData.float1 += 0.1; 
+      rocketData.float2 = 12.4; // Example constant
 
-      rf95.send((uint8_t*)&responseValue, sizeof(responseValue));
+      // --- 2. RESPOND WITH ROCKET STRUCT ---
+      Serial.println("Sending Rocket Packet...");
+      
+      rf95.send((uint8_t*)&rocketData, sizeof(rocketData));
       rf95.waitPacketSent();
 
-      // CRITICAL
       rf95.setModeRx();
-
-      responseValue += 1.0f;
+      
+      Serial.println("Response Sent.");
     }
   }
 }
