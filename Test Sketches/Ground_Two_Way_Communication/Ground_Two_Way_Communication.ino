@@ -10,9 +10,9 @@ RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
 struct __attribute__((packed)) TelemetryPacket 
 {
-  uint32_t pressure[NUM_PT]; // Pressure measurements (psi) *100 (lessens storage space and keeps 2 decimal places)
+  uint32_t pressure[3]; // Pressure measurements (psi) *100 (lessens storage space and keeps 2 decimal places)
   uint32_t loadCell; // Load cell measurement (lb) *100 (lessens storage space and keeps 2 decimal places)
-  uint8_t servoPos[NUM_SERVO];
+  uint8_t servoPos[4];
   bool solenoidState;
   uint32_t timestamp;
 };
@@ -20,17 +20,17 @@ struct __attribute__((packed)) TelemetryPacket
 struct __attribute__((packed)) CommandPacket
 {
   uint16_t packetID;
-  bool servoState[NUM_SERVO];
+  bool servoState[4];
   bool solenoidState;
   bool armedState;
-  bool ematchState[NUM_EMATCH];
+  bool ematchState[2];
   bool tareLoadCellState;
   uint16_t crc;
 };
 
 
-GroundTxPacket txPacket = {false,false};
-RocketTxPacket rxPacket = {0.0,0.0};
+CommandPacket command = {0};
+TelemetryPacket telemetry;
 
 
 void setup() {
@@ -69,11 +69,8 @@ void setup() {
 void loop() {
   // ---------------- SEND ----------------
   Serial.print("Sending: ");
-  Serial.print(txPacket.bool1);
-  Serial.print(",");
-  Serial.println(txPacket.bool2);
 
-  rf95.send((uint8_t*)&txPacket, sizeof(txPacket));
+  rf95.send((uint8_t*)&command, sizeof(command));
   rf95.waitPacketSent();
 
   // CRITICAL
@@ -86,28 +83,35 @@ void loop() {
       uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
       uint8_t len = sizeof(buf);
 
-      if (rf95.recv(buf, &len) && len == sizeof(RocketTxPacket)) {
+      if (rf95.recv(buf, &len) && len == sizeof(TelemetryPacket)) {
 
-        memcpy(&rxPacket, buf, sizeof(RocketTxPacket));
+        memcpy(&telemetry, buf, sizeof(TelemetryPacket));
 
         Serial.print("Received: ");
-        Serial.print(rxPacket.float1);
+        for (uint8_t i=0; i<3; i++)
+        {
+        Serial.print(telemetry.pressure[i]);
         Serial.print(",");
-        Serial.println(rxPacket.float2);
+        }
+        Serial.print(telemetry.loadCell);
+        Serial.print(",");
+        for (uint8_t i=0; i<4; i++)
+        {
+        Serial.print(telemetry.servoPos[i]);
+        Serial.print(",");
+        }
+        Serial.print(telemetry.solenoidState);
+        Serial.print(",");
+        Serial.println(telemetry.timestamp);
         break;
       }
     }
   }
 
-  // Incrementing transmit packet
-  if (txPacket.bool2 == false)
-  {
-    txPacket.bool2 = true;
-  }
-  else
-  {
-    txPacket.bool2 = false;
-  }
-
+  // Incrementing command packet
+  command.packetID++; 
+  command.solenoidState = !command.solenoidState; // Toggle state
+  command.armedState = (command.packetID % 3 == 0); // Arm every 3rd packet
+  
   delay(100);
 }
