@@ -12,7 +12,7 @@ void initActuators(Servo servos[])
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {
     servos[i].attach(servoPins[i]);
-    servos[i].write(servoClosed);
+    servos[i].write(servoClosed[i]);
     delay(50);
     servos[i].detach();
   }
@@ -47,7 +47,7 @@ void applyActuateCommands(Servo servos[], bool servoAttachedState[], uint16_t se
       }
 
       // Writing commanded position to servo pin
-      servos[i].write(cmd.servoState[i] ? servoOpen : servoClosed);
+      servos[i].write(cmd.servoState[i] ? servoOpen[i] : servoClosed[i]);
 
       // Updating time that servo started moving
       servoActuationStart[i] = millis();

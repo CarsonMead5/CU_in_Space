@@ -102,11 +102,11 @@ void debugReceive(const TelemetryPacket &t)
   Serial.print("Pressures: ");
   for (uint8_t i=0; i<NUM_PT; i++)
   {
-    Serial.print(t.pressure[i]);
+    Serial.print(t.pressure[i]/100);
     Serial.print(",");
   }
   Serial.print(" | Load Cell: ");
-  Serial.print(t.loadCell);
+  Serial.print(t.loadCell/100);
   Serial.print(" | Servo Positions: ");
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {
