@@ -6,8 +6,7 @@
 // Initializes LoRa Transceiver
 void initLoRa(RH_RF95 &LoRa)
 {
-  // Manually restarting LoRa
-  // Basically power-cycling the radio
+  // Manually resetting LoRa
   pinMode(LoRa_RST, OUTPUT);
   digitalWrite(LoRa_RST, LOW);
   delay(10);
@@ -23,90 +22,85 @@ void initLoRa(RH_RF95 &LoRa)
     while (1);
   }
 
-  // Setting radio parameters
+  // Setting radio parameters to match Ground Station
   LoRa.setFrequency(LoRa_Freq);
   LoRa.setTxPower(19, false);
-  LoRa.setSpreadingFactor(7);     // 6–12
-  LoRa.setSignalBandwidth(125E3); // 125kHz, 250kHz, etc
-  LoRa.setCodingRate4(5);         // 5–8
+  LoRa.setSpreadingFactor(7);     
+  LoRa.setSignalBandwidth(125E3); 
+  LoRa.setCodingRate4(5);         
+
+  // Ensure we start in RX mode
+  LoRa.setModeRx();
 }
 
 // -------------------------------
 // receiveCommands() Function
 // -------------------------------
-// Receiving commands from ground station
+// Logic: Listen for ground, verify size and CRC, then copy to main struct
 bool receiveCommands(RH_RF95 &LoRa, CommandPacket &cmd, CommandPacket &lastCmd)
 {
-  // Temporary storage
-  CommandPacket temp;
-  
-  // Calculating byte length of command packet
-  uint8_t len = sizeof(cmd);
-
-  // Creating pointer to look at each individual byte in the struct
-  // Casting the pointer to look at an array of individual bytes
-  uint8_t* cmdPtr = (uint8_t*)&temp;
-
-  // Checking if other radio is transmitting
   if (LoRa.available())
   {
-    Serial.println("LoRa avail");
-    // Receiving data
-    if(LoRa.recv(cmdPtr, &len))
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+    uint8_t len = sizeof(buf);
+
+    if(LoRa.recv(buf, &len))
     {
-      // Grabbing crc that was sent
+      // 1. Check if the received length matches our struct size
+      if (len != sizeof(CommandPacket)) {
+        Serial.println("Error: Packet size mismatch");
+        return false;
+      }
+
+      // 2. Temporarily hold data to verify CRC
+      CommandPacket temp;
+      memcpy(&temp, buf, sizeof(CommandPacket));
+
+      // 3. Extract and verify CRC
       uint16_t sentCRC = temp.crc;
-
-      // Removing crc from struct (will interfere with calculations)
-      temp.crc = 0;
-
-      // Computing crc from received struct (sent crc not included)
+      temp.crc = 0; // Clear it for calculation
       uint16_t computedCRC = computeCRC16((uint8_t*)&temp, sizeof(CommandPacket) - sizeof(temp.crc));
 
       if (sentCRC == computedCRC)
       {
-        // Storing structs
-        lastCmd = cmd;
-        cmd = temp;
+        lastCmd = cmd; // Save previous state
+        cmd = temp;    // Update current state
+        cmd.crc = sentCRC; // Put the CRC back for debugging
 
-        // DEBUG : printing what commands were received to serial monitor
-        // *** Comment out normally for performance ***
         debugReceive(cmd);
-
-        // Returning true if data of correct size was received
         return true;
+      }
+      else
+      {
+        Serial.println("Error: CRC Failure");
       }
     }
   }
-    // Serial.println("LoRa no received");
-
-  // Returning false if no data was received or crc failed
   return false;
 }
 
 // -------------------------------
 // sendTelemetry() Function
 // -------------------------------
-// Sending telemetry to ground station (sensor data and actuator position)
 void sendTelemetry(RH_RF95 &LoRa, const TelemetryPacket &t)
 {
-  // Sending telemetry
+  // Using the logic from the first file: Send -> Wait -> Set Mode RX
+  Serial.println("Sending Telemetry Packet...");
+  
   LoRa.send((uint8_t*)&t, sizeof(t));
-
-  // Waiting to receive ping back that the data was received
   LoRa.waitPacketSent();
 
-  // DEBUG : printing what telemetry was sent to serial monitor
-  // *** Comment out normally for performance ***
-  debugSend(t);
-
+  // CRITICAL: Return to RX mode so we can hear the NEXT command
   LoRa.setModeRx();
+
+  debugSend(t);
 }
 
 // -------------------------------
-// debugReceive() Function
+// debugReceive() & debugSend()
 // -------------------------------
-// Debugging function that prints out all received commands to serial monitor
+// (Kept your original logic but ensured it uses the correct struct members)
+
 void debugReceive(const CommandPacket &cmd)
 {
   Serial.println("Commands Received:");
