@@ -50,11 +50,11 @@ void logTelemetry(const TelemetryPacket &t)
 
   for (uint8_t i=0; i<NUM_PT; i++)
   {
-    Serial1.print(t.pressure[i]);
+    Serial1.print(t.pressure[i]/100);
     Serial1.print(",");
   }
 
-  Serial1.print(t.loadCell);
+  Serial1.print(t.loadCell/100);
   Serial1.println();
 }
 

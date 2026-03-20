@@ -33,7 +33,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
 {
   // Serial.println("34");
   // Reading raw load cell bin output
-  long raw = 5;//loadCell.read_average(3);
+  long raw = loadCell.read_average(3);
   // Offseting raw output
   long corrected = raw - loadCellOffset;
   // Calculating load cell lb measurement
@@ -86,7 +86,7 @@ float calibratePressure(uint8_t Pin_Num)
 // Taring the load cell 
 long tareLoadCell(HX711 &loadCell)
 {
-  long offset = -5 ; // loadcell.read_average(5)
+  long offset = loadCell.read_average(5) ;
 
   return offset;
 }
