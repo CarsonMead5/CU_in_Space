@@ -62,7 +62,7 @@ void loop() {
       rf95.send((uint8_t*)&responseValue, sizeof(responseValue));
       rf95.waitPacketSent();
 
-      // 🔴 CRITICAL
+      // CRITICAL
       rf95.setModeRx();
 
       responseValue += 1.0f;

@@ -8,7 +8,20 @@
 
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
-float txValue = 0.0;
+struct __attribute__((packed)) GroundTxPacket{
+  bool bool1;
+  bool bool2;
+};
+
+struct __attribute__((packed)) RocketTxPacket{
+  float float1;
+  float float2;
+};
+
+
+GroundTxPacket txPacket = {false,false};
+RocketTxPacket rxPacket = {0.0,0.0};
+
 
 void setup() {
   pinMode(RFM95_RST, OUTPUT);
@@ -31,7 +44,7 @@ void setup() {
   }
 
   rf95.setFrequency(RF95_FREQ);
-  rf95.setTxPower(23, false);
+  rf95.setTxPower(19, false);
 
   // Match settings explicitly
   rf95.setSpreadingFactor(7);
@@ -46,12 +59,14 @@ void setup() {
 void loop() {
   // ---------------- SEND ----------------
   Serial.print("Sending: ");
-  Serial.println(txValue);
+  Serial.print(txPacket.bool1);
+  Serial.print(",");
+  Serial.println(txPacket.bool2);
 
-  rf95.send((uint8_t*)&txValue, sizeof(txValue));
+  rf95.send((uint8_t*)&txPacket, sizeof(txPacket));
   rf95.waitPacketSent();
 
-  // 🔴 CRITICAL
+  // CRITICAL
   rf95.setModeRx();
 
   // ---------------- RECEIVE ----------------
@@ -61,17 +76,28 @@ void loop() {
       uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
       uint8_t len = sizeof(buf);
 
-      if (rf95.recv(buf, &len) && len == sizeof(float)) {
-        float rxValue;
-        memcpy(&rxValue, buf, sizeof(rxValue));
+      if (rf95.recv(buf, &len) && len == sizeof(RocketTxPacket)) {
+
+        memcpy(&rxPacket, buf, sizeof(RocketTxPacket));
 
         Serial.print("Received: ");
-        Serial.println(rxValue);
+        Serial.print(rxPacket.float1);
+        Serial.print(",");
+        Serial.println(rxPacket.float2);
         break;
       }
     }
   }
 
-  txValue += 0.5f;
-  delay(500);
+  // Incrementing transmit packet
+  if (txPacket.bool2 == false)
+  {
+    txPacket.bool2 = true;
+  }
+  else
+  {
+    txPacket.bool2 = false;
+  }
+
+  delay(100);
 }
