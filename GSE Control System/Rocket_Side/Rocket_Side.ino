@@ -24,6 +24,8 @@
 #include "actuators.h"
 #include "crc.h"
 
+#include "log.h"
+
 // -------------------------------
 // Initializing Key Objects and Structs
 // -------------------------------
@@ -96,6 +98,9 @@ void setup() {
   // Initializing Actuators
   initActuators(servos);
 
+  // OpenLog
+  initLogger();
+
   // Printing to Console State
   Serial.println("Rocket-Side Arduino Ready");
 }
@@ -114,6 +119,8 @@ void loop() {
 
   //   Reading Current Time
   telemetry.timestamp = millis();
+
+  logTelemetry(telemetry);
 
   bool avail_flag = false;  // Default state is false
   if (LoRa.available()) {
