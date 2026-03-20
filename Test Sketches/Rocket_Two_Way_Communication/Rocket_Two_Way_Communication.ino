@@ -9,14 +9,24 @@
 RH_RF95 rf95(RFM95_CS, RFM95_INT);
 
 // --- STRUCT DEFINITIONS ---
-struct __attribute__((packed)) GroundTXPacket {
-  bool bool1; 1 to 5, 7 8
-  bool bool2;
+struct __attribute__((packed)) TelemetryPacket 
+{
+  uint32_t pressure[NUM_PT]; // Pressure measurements (psi) *100 (lessens storage space and keeps 2 decimal places)
+  uint32_t loadCell; // Load cell measurement (lb) *100 (lessens storage space and keeps 2 decimal places)
+  uint8_t servoPos[NUM_SERVO];
+  bool solenoidState;
+  uint32_t timestamp;
 };
 
-struct __attribute__((packed)) RocketTXPacket {
-  float float1; 
-  float float2;    
+struct __attribute__((packed)) CommandPacket
+{
+  uint16_t packetID;
+  bool servoState[NUM_SERVO];
+  bool solenoidState;
+  bool armedState;
+  bool ematchState[NUM_EMATCH];
+  bool tareLoadCellState;
+  uint16_t crc;
 };
 
 // Instances for handling data
