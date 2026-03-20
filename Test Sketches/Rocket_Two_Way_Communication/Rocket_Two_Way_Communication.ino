@@ -29,6 +29,7 @@ struct __attribute__((packed)) CommandPacket
   uint16_t crc;
 };
 
+CommandPacket incomingCommand;
 TelemetryPacket outgoingTelem = { {0, 0, 0}, 0, {0, 0, 0, 0}, false, 0 };
 
 void setup() {
