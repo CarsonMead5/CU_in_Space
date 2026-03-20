@@ -6,9 +6,14 @@
 // Initializes LoRa Transceiver
 void initLoRa(RH_RF95 &LoRa)
 {
+  pinMode(LoRa_RST, OUTPUT);
+  digitalWrite(LoRa_RST, HIGH);
+
+  SPI.begin();
+  delay(1000);
+
   // Manually restarting LoRa
   // Basically power-cycling the radio
-  pinMode(LoRa_RST, OUTPUT);
   digitalWrite(LoRa_RST, LOW);
   delay(10);
   digitalWrite(LoRa_RST, HIGH);
@@ -23,7 +28,7 @@ void initLoRa(RH_RF95 &LoRa)
 
   // Setting radio parameters
   LoRa.setFrequency(LoRa_Freq);
-  LoRa.setTxPower(23, false);
+  LoRa.setTxPower(19, false);
   LoRa.setSpreadingFactor(7);     // 6–12
   LoRa.setSignalBandwidth(125E3); // 125kHz, 250kHz, etc
   LoRa.setCodingRate4(5);         // 5–8
@@ -36,24 +41,22 @@ void initLoRa(RH_RF95 &LoRa)
 // Receiving telemetry from rocket
 bool receiveTelemetry(RH_RF95 &LoRa, TelemetryPacket &t)
 {
-  // Calculating byte length of telemetry packet
-  uint8_t len = sizeof(t);
-  Serial.println(len);
-
-  // Creating pointer to look at each individual byte in the struct
-  // Casting the pointer to look at an array of individual bytes
-  uint8_t* telemPtr = (uint8_t*)&t;
-  // Serial.println("line 42");
-
-  // LoRa.setModeRX();
-
   // Checking if radio is transmitting
   if (LoRa.available())
   {
-    Serial.println("line 46 - lora avail");
+    // Creating pointer to look at each individual byte in the struct
+    // Casting the pointer to look at an array of individual bytes
+    uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
+
+    // Calculating byte length of max message
+    uint8_t len = sizeof(buf);
+    
     // Receiving data
-    if (LoRa.recv(telemPtr, &len))
+    if (LoRa.recv(buf, &len) && len == sizeof(TelemetryPacket))
     {
+      // Copying received telemetry into telemetry struct
+      memcpy(&t, buf, sizeof(TelemetryPacket));
+      
       // DEBUG : printing what commands were received to serial monitor
       // *** Comment out normally for performance ***
       debugReceive(t);

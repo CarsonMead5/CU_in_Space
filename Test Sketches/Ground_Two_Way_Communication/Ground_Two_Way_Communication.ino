@@ -77,7 +77,7 @@ void loop() {
   rf95.setModeRx();
 
   // ---------------- RECEIVE ----------------
-  unsigned long start = millis();
+  // unsigned long start = millis();
   while (millis() - start < 200) { // wait up to 200 ms
     if (rf95.available()) {
       uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
