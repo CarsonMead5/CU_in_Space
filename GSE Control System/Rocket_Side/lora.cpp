@@ -139,7 +139,7 @@ void debugSend(const TelemetryPacket &t)
     Serial.print(",");
   }
   Serial.print(" | Load Cell: ");
-  Serial.print(t.loadCell);
+  Serial.print(t.loadCell/100.0);
   Serial.print(" | Servo Positions: ");
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {

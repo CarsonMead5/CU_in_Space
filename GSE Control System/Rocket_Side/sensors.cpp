@@ -40,7 +40,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
   float force_lb = corrected / loadCellCalibrationFactor;
   // Storing load cell lb measurement in telemetry packet
   // Note: Value is stored *100 of measured value and type cast into int
-  t.loadCell = (uint32_t)(force_lb * 100);
+  t.loadCell = (int32_t)(force_lb * 100);
 
   // Reading pressure transducers
   for (uint8_t i=0; i<NUM_PT; i++)
@@ -86,7 +86,7 @@ float calibratePressure(uint8_t Pin_Num)
 // Taring the load cell 
 long tareLoadCell(HX711 &loadCell)
 {
-  long offset = loadCell.read_average(5) ;
+  long offset = loadCell.read_average(10) ;
 
   return offset;
 }

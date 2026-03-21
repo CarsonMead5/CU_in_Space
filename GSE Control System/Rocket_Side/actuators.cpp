@@ -11,9 +11,10 @@ void initActuators(Servo servos[])
   // Detaching servos
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {
-    servos[i].attach(servoPins[i]);
-    servos[i].write(servoClosed[i]);
-    delay(50);
+    servos[i].write(servoClosed[i]); // 90 deg
+    servos[i].attach(servoPins[i], servoLOW[i], servoHIGH[i]);
+
+    delay(500);
     servos[i].detach();
   }
 
