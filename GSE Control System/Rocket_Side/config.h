@@ -19,8 +19,8 @@ constexpr uint8_t LoRa_CS = 10;
 // Servo3 = Vent -> 5
 // Servo4 = Dump -> 6
 // Solenoid -> 8
-// Ematch1 -> 31
-// Ematch2 -> 33
+// Ematch1 -> 26
+// Ematch2 -> 28
 const uint8_t servoPins[NUM_SERVO] = {3,4,5,6};
 const uint32_t servoLOW[NUM_SERVO] = {500, 500, 500, 500 }; 
 const uint32_t servoHIGH[NUM_SERVO] = {1000, 1000, 1000, 1000}; 
