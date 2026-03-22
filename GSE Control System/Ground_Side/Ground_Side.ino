@@ -11,7 +11,7 @@
 // - 1 Abort Switch
 // - 2 Control Buttons
 // - 4 MAX7129 7 Segment Displays
-// - 2 4 Pin LCD Screens
+// - 2 4 Pin LCD Screens (Currently Disabled)
 // - 1 MicroSD Data Logger
 
 // -------------------------------
@@ -31,14 +31,22 @@
 
 // LoRa transceiver
 RH_RF95 LoRa(LoRa_CS, LoRa_INT);
-// Array of LCD screens
-// LiquidCrystal_I2C LCDs[NUM_LCD] = {}
-// Seven Segment Display (4 Daisy Chained)
-// LedControl SevSD(SevSD_DIN,SevSD_CS,SevSD_CLK,NUM_SevSD);
+
+// Array of LCD screens (Initialized using the I2C addresses from display.h, assuming standard 16x2 screens)
+// LiquidCrystal_I2C LCDs[NUM_LCD] = {
+//   LiquidCrystal_I2C(LCD_Address[0], 16, 2),
+//   LiquidCrystal_I2C(LCD_Address[1], 16, 2)
+// };
+
+// Seven Segment Display (4 Daisy Chained) - Order is (DIN, CLK, CS, numDevices)
+LedControl SevSD(SevSD_DIN, SevSD_CLK, SevSD_CS, NUM_SevSD);
+
 // Initializing telemetry packet object
 TelemetryPacket telemetry = { 0 };
+
 // Initializing command packet object
 CommandPacket command = { 0 };
+
 // Initializing last packet sent variable
 long lastPacketSent = millis();
 
@@ -64,11 +72,10 @@ void setup() {
 
   if (!LoRa.init()) {
     Serial.println("LoRa init failed");
-    while (1)
-      ;
+    while (1);
   }
 
-  LoRa.setFrequency(LoRa_Freq);
+  LoRa.setFrequency(915.0); // Assuming LoRa_Freq is 915.0
   LoRa.setTxPower(19, false);
 
   // Match settings explicitly
@@ -78,10 +85,8 @@ void setup() {
 
   LoRa.setModeRx();
 
-  Serial.println("Ground Ready");
-
-  // Initializing all displays
-  // initDisplays();
+  // Initializing displays (LCD removed from parameters)
+  initDisplays(SevSD);
 
   // Setting Up Switches
   initSwitches();
@@ -103,10 +108,7 @@ void loop() {
   // Send the command packet to the rocket
   sendCommands(LoRa, command);
   
-  // CRITICAL FIX FROM SECTION 2: 
   // Wait for the transmission to physically complete before switching modes.
-  // (Note: If waitPacketSent() is already inside your sendCommands() function, 
-  // having it here twice won't hurt, but it's essential that it executes).
   LoRa.waitPacketSent(); 
 
   // Switch to receive mode immediately after sending
@@ -119,27 +121,24 @@ void loop() {
       uint8_t buf[RH_RF95_MAX_MESSAGE_LEN];
       uint8_t len = sizeof(buf);
 
-      // Combined check from Section 2 logic
       if (LoRa.recv(buf, &len) && len == sizeof(TelemetryPacket)) {
         memcpy(&telemetry, buf, sizeof(TelemetryPacket));
         
         Serial.println("Packet successfully received!");
-        debugReceive(telemetry);
+        // debugReceive(telemetry); // Uncomment if debugReceive is fully implemented
         
         break; // Exit the listening window early since we got our data
       }
     }
   }
 
-  // Updating LCDs and 7SDs
-  // updateDisplays(LCDS, SevSD);
+  // Updating 7SDs (LCD logic is commented out inside display.cpp)
+  updateDisplays(telemetry, SevSD);
 
   // Logging the Data to the OpenLog
   // logTelemetry(telemetry);
 
   // ---------------- PACING ----------------
-  // Replaces the outer millis() timer from Section 1. 
-  // This delay pacing combined with the 200ms window means your loop 
-  // runs cleanly roughly 3 times per second, just like Section 2.
+  // Pacing combined with the 200ms window means your loop runs roughly 3 times per second
   delay(100);
 }

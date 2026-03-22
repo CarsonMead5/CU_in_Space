@@ -135,7 +135,7 @@ void debugSend(const TelemetryPacket &t)
   Serial.print("Pressures: ");
   for (uint8_t i=0; i<NUM_PT; i++)
   {
-    Serial.print(t.pressure[i]);
+    Serial.print(t.pressure[i]/100.0);
     Serial.print(",");
   }
   Serial.print(" | Load Cell: ");

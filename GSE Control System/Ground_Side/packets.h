@@ -10,8 +10,6 @@
 constexpr uint8_t NUM_SERVO = 4;
 constexpr uint8_t NUM_PT = 3;
 constexpr uint8_t NUM_EMATCH = 2;
-constexpr uint8_t NUM_LCD = 2;
-constexpr uint8_t NUM_SevSD = 4;
 
 // Makes sure there are no garbage values inserted in the structs
 #pragma pack(push,1)
