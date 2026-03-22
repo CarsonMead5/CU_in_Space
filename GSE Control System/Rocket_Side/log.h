@@ -10,8 +10,7 @@
 // Initializing data logger
 void initLogger();
 
-// Starting new data file on microSD card
-void startNewLogFile();
+// new file auto starts itself
 
 // Logs the telemetry received to the microSD card
 void logTelemetry(const TelemetryPacket &t);

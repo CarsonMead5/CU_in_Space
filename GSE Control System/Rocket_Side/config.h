@@ -6,7 +6,8 @@
 // -------------------------------
 // LoRa Configuration
 // -------------------------------
-// G0(INT)->2, RST->9, CS->10, MOSI->51, MISO->50, SCK->52
+
+// VIN->5V, GND->GND, EN hangs, G0(INT)->2, SCK->52, MISO->50, MOSI->51, CS->10, RST->9
 constexpr uint8_t LoRa_INT = 2;
 constexpr uint8_t LoRa_RST = 9;
 constexpr uint8_t LoRa_CS = 10;
@@ -30,9 +31,12 @@ constexpr uint8_t ematchPins[NUM_EMATCH] = {26,28};
 // -------------------------------
 // Sensor Configurations
 // -------------------------------
+
+// Pressure Transducer Signal Pins:
 // PT1 -> A0
 // PT2 -> A1
 // PT3 -> A2
+
 // Load Cell: DAT -> 11, CLK -> 7
 const uint8_t pressurePins[NUM_PT] = {A0,A1,A2};
 constexpr uint8_t loadCell_DT = 11;

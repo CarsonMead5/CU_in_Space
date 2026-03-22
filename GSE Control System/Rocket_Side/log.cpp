@@ -3,61 +3,38 @@
 // -------------------------------
 // initLogger() Function
 // -------------------------------
-// Initializing data logger
 void initLogger()
 {
   // Opening up serial channel 1 (9600 baud)
-  // Note: the serial logger only takes in 9600 baud inputs
-  Serial1.begin(9600);
+  Serial1.begin(115200);
+  
+  // Give the OpenLog 1 second to wake up and generate its automatic LOGxxxxx.TXT file
   delay(1000);
 
-  // Opening new file on data logger
-  startNewLogFile();
-
   // Entering csv header
-  Serial1.println("Time,PT1,PT2,PT3,LoadCell");
-}
-
-// -------------------------------
-// startNewLogFile() Function
-// -------------------------------
-// Starting new data file on microSD card
-void startNewLogFile()
-{
-  // Entering command mode 
-  // Byte number provided by manufacturer in config file on microSD
-  Serial1.write(26);
-  delay(100);
-
-  // Creating new file
-  Serial1.println("new");
-  delay(100);
-
-  // Exiting command mode
-  Serial1.write(26);
-  delay(100);
+  Serial1.println("Time(ms),PT0(psi),PT1(psi),PT2(psi),LoadCell(lb)");
 }
 
 // -------------------------------
 // logTelemetry() Function
 // -------------------------------
-// Logs the telemetry received to the microSD card
 void logTelemetry(const TelemetryPacket &t)
 {
-  // Printing in .csv form
+  // Timestamp
   Serial1.print(t.timestamp);
   Serial1.print(",");
 
+  // Pressures (Divide by 100.0 to keep decimals)
   for (uint8_t i=0; i<NUM_PT; i++)
   {
-    Serial1.print(t.pressure[i]/100);
+    Serial1.print(t.pressure[i] / 100.0, 2); 
     Serial1.print(",");
   }
 
-  Serial1.print(t.loadCell/100);
+  // Load Cell (Cast to int32_t to prevent 4-billion underflow error, keep decimals)
+  float thrust = (int32_t)t.loadCell / 100.0;
+  Serial1.print(thrust, 2);
+  
+  // End the row
   Serial1.println();
 }
-
-
-
-

@@ -1,5 +1,5 @@
 // Arduino Mega Code for Rocket Side GSE System
-// Contributors: Carson Mead
+// Contributors: Carson Mead, Ryan Chen, Nussbaumer
 // Date Modified: 3/12/26
 
 // -------------------------------
@@ -60,30 +60,36 @@ uint16_t lastTelemetrySent = 0;
 
 
 // -------------------------------
+
 // Main Setup
+
 // -------------------------------
+
 void setup() {
 
+
+
   // Opening Serial Monitor (For Debugging)
-  Serial.begin(115200);  // Baud Rate = 9600 bits/s
+  Serial.begin(115200);  // Baud Rate bits/s
   delay(1000);
   // Initializing the LoRa Transceiver
   pinMode(LoRa_RST, OUTPUT);
   digitalWrite(LoRa_RST, HIGH);
-  
+
+
   // Reset radio
   digitalWrite(LoRa_RST, LOW);
   delay(10);
   digitalWrite(LoRa_RST, HIGH);
   delay(10);
   SPI.begin();
+
   if (!LoRa.init()) {
     Serial.println("LoRa init failed");
-    while (1)
-      ;
+    while (1);
   }
 
-  // --- THE MISSING CRITICAL SETTINGS ---
+
   Serial.println("Configuring LoRa Parameters...");
   LoRa.setFrequency(915.0);  // Match ground station!
   LoRa.setTxPower(19, false);
@@ -101,6 +107,7 @@ void setup() {
   // OpenLog
   initLogger();
 
+
   // Printing to Console State
   Serial.println("Rocket-Side Arduino Ready");
 }
@@ -111,16 +118,23 @@ void setup() {
 // -------------------------------
 void loop() {
 
-  //   Reading Sensors
+  // Reading Sensors
   readSensors(loadCell, loadCellOffset, PT_MinV, telemetry);
 
-  //   Reading Actuator States
+  // Reading Actuator States
   readActuatorStates(servos, telemetry);
 
-  //   Reading Current Time
+  // Reading Current Time
   telemetry.timestamp = millis();
 
-  logTelemetry(telemetry);
+  // ---------------- PACED LOGGING ----------------
+  // Only write to the SD card every 50ms (20 Hz) to prevent 9600 baud buffer overflow
+  static unsigned long lastLogTime = 0;
+  if (millis() - lastLogTime >= 50) {
+    logTelemetry(telemetry);
+    lastLogTime = millis();
+  }
+  // -----------------------------------------------
 
   bool avail_flag = false;  // Default state is false
   if (LoRa.available()) {
@@ -162,12 +176,12 @@ void loop() {
   if (avail_flag) {
     applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
 
-
     // Taring load cell if commanded
     if (command.tareLoadCellState != lastCommand.tareLoadCellState && command.tareLoadCellState == true) {
       loadCellOffset = tareLoadCell(loadCell);
     }
     sendTelemetry(LoRa, telemetry);
   }
+
   updateServos(servos, servoAttachState, servoActuationStart);  // always detach servos 250 ms after actuating
 }

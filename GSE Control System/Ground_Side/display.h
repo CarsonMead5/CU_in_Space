@@ -7,6 +7,9 @@
 #include <LiquidCrystal_I2C.h> 
 #include <LedControl.h> 
 
+// LCD
+// SDA 20
+// SDL 21
 
 // Declare LCD objects as extern so display.cpp can define them
 extern LiquidCrystal_I2C lcd1;

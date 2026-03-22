@@ -23,8 +23,8 @@ constexpr uint8_t NUM_SevSD = 4;
 constexpr uint8_t LCD_SDA = 20;
 constexpr uint8_t LCD_SCK = 21;  // This is the SCL pin
 constexpr uint8_t NUM_LCD = 2;
-// Added the specific I2C addresses for your two screens here:
 
+// Added the specific I2C addresses for your two screens here:
 // constexpr uint16_t LCD_Address[NUM_LCD] = {0x3E, 0x27};
 
 

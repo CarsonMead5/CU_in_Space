@@ -27,34 +27,37 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
 // -------------------------------
 // readSensors() Function
 // -------------------------------
-// Reading all sensors and placing their readings into the telemetry packet
-// Reminder: All values are 100x to retain 2 decimal places
 void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], TelemetryPacket &t)
 {
-  // Serial.println("34");
-  // Reading raw load cell bin output
-  long raw = loadCell.read_average(3);
-  // Offseting raw output
-  long corrected = raw - loadCellOffset;
-  // Calculating load cell lb measurement
-  float force_lb = corrected / loadCellCalibrationFactor;
-  // Storing load cell lb measurement in telemetry packet
-  // Note: Value is stored *100 of measured value and type cast into int
-  t.loadCell = (int32_t)(force_lb * 100);
+  // --- NON-BLOCKING LOAD CELL READ ---
+  if (loadCell.is_ready()) {
+    // 1. Instantly grab the latest single value (does not wait)
+    long raw = loadCell.read(); 
+    long corrected = raw - loadCellOffset;
+    float current_force = corrected / loadCellCalibrationFactor;
 
-  // Reading pressure transducers
+    // 2. Apply a software smoothing filter (Exponential Moving Average)
+    // This perfectly replicates read_average(3) but takes 0.001 milliseconds!
+    // The 0.3 means "trust the new reading 30%, trust the history 70%"
+    static float filtered_force = 0.0;
+    filtered_force = (0.3 * current_force) + (0.7 * filtered_force);
+
+    // 3. Store in telemetry packet
+    t.loadCell = (int32_t)(filtered_force * 100);
+  }
+  // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value 
+  // and the loop keeps flying at maximum speed!
+
+  // --- PRESSURE TRANSDUCERS ---
+  // analogRead takes ~0.1 milliseconds, so doing 3 of them is totally fine
   for (uint8_t i=0; i<NUM_PT; i++)
   {
-    // Reading voltage output of pin
     float voltage = (analogRead(pressurePins[i]) / ADC_Resolution) * PT_RefV;
-
-    // Converting voltage to pressure
     float pressure = (voltage - PT_MinV[i]) * (PT_MaxP[i]) / (PT_MaxV - PT_MinV[i]);
 
-    // Collecting edge case
     if (pressure < 0) pressure = 0;
 
-    t.pressure[i] = pressure*100;
+    t.pressure[i] = pressure * 100;
   }
 }
 

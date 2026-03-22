@@ -1,8 +1,13 @@
 #include "display.h"
 
+// LCD
+// SDA 20
+// SDL 21
+
 // Define the LCD objects using addresses from config.h
 LiquidCrystal_I2C lcd1(LCD_Address[0], 16, 2);
 LiquidCrystal_I2C lcd2(LCD_Address[1], 16, 2);
+
 
 // -------------------------------
 // initDisplays()
