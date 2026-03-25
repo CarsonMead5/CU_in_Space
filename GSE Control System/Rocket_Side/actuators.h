@@ -8,8 +8,8 @@
 // -------------------------------
 // Key Actuator Variables
 // -------------------------------
-constexpr uint8_t servoClosed[NUM_SERVO] = {65, 102, 100, 70};
-constexpr uint8_t servoOpen[NUM_SERVO] = {5,7,3,7};
+constexpr uint8_t servoClosed[NUM_SERVO] = {67, 104, 102, 72}; // everything plus two
+constexpr uint8_t servoOpen[NUM_SERVO] = {2,9,5,9};
 constexpr uint8_t servoMoveTime = 250; // Time to when servo can finish movement
 
 
