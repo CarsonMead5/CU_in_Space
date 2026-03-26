@@ -63,7 +63,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     Serial.print("Pressure Reading ");
     Serial.print(i);
     Serial.print(": ");
-    Serial.print((float)t.pressure[i]/100);
+    Serial.print((float)t.pressure[i]/100.0);
     Serial.print("   ");
     if (i == 2)
     {
