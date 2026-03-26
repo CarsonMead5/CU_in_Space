@@ -55,7 +55,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     float voltage = (analogRead(pressurePins[i]) / ADC_Resolution) * PT_RefV;
     float pressure = (voltage - PT_MinV[i]) * (PT_MaxP[i]) / (PT_MaxV - PT_MinV[i]);
 
-    if (pressure < 0) pressure = 0;
+    // if (pressure < 0) pressure = 0;
 
     t.pressure[i] = pressure*100;
 
@@ -65,7 +65,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     Serial.print(": ");
     Serial.print((float)t.pressure[i]/100);
     Serial.print("   ");
-    if (i == 3)
+    if (i == 2)
     {
       Serial.println();
     }
@@ -91,7 +91,7 @@ float calibratePressure(uint8_t Pin_Num)
   Serial.println(avgADC);
 
   // Calculating voltage where pressure is 0 psi (gauge)
-  float zeroV = (avgADC / ADC_Resolution) * PT_RefV;
+  float zeroV = 0.5; // (avgADC / ADC_Resolution) * PT_RefV;
 
   // Returnign 0 psi voltage measurment
   return zeroV;

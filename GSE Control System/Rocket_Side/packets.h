@@ -18,7 +18,7 @@ constexpr uint8_t NUM_EMATCH = 2;
 // Version Number: 2 (Change this if anything changes to keep track of discrepancies)
 struct TelemetryPacket 
 {
-  uint32_t pressure[NUM_PT]; 
+  int32_t pressure[NUM_PT]; 
   int32_t loadCell;          // <--- MAKE SURE THIS SAYS int32_t
   uint8_t servoPos[NUM_SERVO];
   bool solenoidState;
