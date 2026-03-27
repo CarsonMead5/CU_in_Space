@@ -22,7 +22,6 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[]) {
   // Serial.println("sensors 21");
 }
 
-
 // -------------------------------
 // readSensors() Function
 // -------------------------------
@@ -49,22 +48,29 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
   // --- PRESSURE TRANSDUCERS ---
   // analogRead takes ~0.1 milliseconds, so doing 3 of them is totally fine
   for (uint8_t i = 0; i < NUM_PT; i++) {
-    float voltage = (analogRead(pressurePins[i]) / ADC_Resolution) * PT_RefV;
-    float pressure = (voltage - PT_MinV[i]) * (PT_MaxP[i]) / (PT_MaxV - PT_MinV[i]);
+    // 1. Read the raw ADC value and convert to Volts
+    int rawADC = analogRead(pressurePins[i]);
+    float voltage = (rawADC / 1024.0) * 5.31;
 
-    // if (pressure < 0) pressure = 0;
+    // 2. Subtract the 0.5V baseline, then multiply by the 400 psi/V slope
+    float pressure = (voltage - 0.5) * 400.0;
 
+    if (pressure < 0) {
+      pressure = 0;
+    }
+
+    // Store in telemetry packet
     t.pressure[i] = pressure * 100;
 
-    // Printing out for debugging
-    Serial.print("Pressure Reading ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print((float)t.pressure[i] / 100.0);
-    Serial.print("   ");
-    if (i == 2) {
-      Serial.println();
-    }
+    // // Printing out for debugging
+    // Serial.print("Pressure Reading ");
+    // Serial.print(i);
+    // Serial.print(": ");
+    // Serial.print((float)t.pressure[i] / 100.0);
+    // Serial.print("   ");
+    // if (i == 2) {
+    //   Serial.println();
+    // }
   }
 }
 
@@ -85,12 +91,12 @@ float calibratePressure(uint8_t Pin_Num) {
   Serial.println(avgADC);
 
   // Calculating voltage where pressure is 0 psi (gauge)
-  float zeroV = (avgADC / ADC_Resolution) * PT_RefV;
+  // Updated to use the 5.31V reference and 1024.0 divisor
+  float zeroV = (avgADC / 1024.0) * 5.31;
 
-  // Returnign 0 psi voltage measurment
+  // Returning 0 psi voltage measurement
   return zeroV;
 }
-
 
 // -------------------------------
 // tareLoadCell() Function
