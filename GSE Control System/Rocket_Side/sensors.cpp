@@ -4,9 +4,8 @@
 // initSensors() Function
 // -------------------------------
 // Initializing all sensors (pressure transducers, load cell)
-void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
-{
-    // Serial.println("sensors 9");
+void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[]) {
+  // Serial.println("sensors 9");
   // Initializing load cell communication through HX711
   loadCell.begin(loadCell_DT, loadCell_CLK);
   // Serial.println("sensors 12");
@@ -16,9 +15,9 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
   // Serial.println("sensors 16");
 
   // Calibrating pressure transducers
-  for (uint8_t i=0; i<NUM_PT; i++)
-  {
-    PT_MinV[i] = calibratePressure(pressurePins[i]);
+  for (uint8_t i = 0; i < NUM_PT; i++) {
+    PT_MinV[i] = PT_HardVMin[i];
+    // calibratePressure(pressurePins[i]);
   }
   // Serial.println("sensors 21");
 }
@@ -27,12 +26,11 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[])
 // -------------------------------
 // readSensors() Function
 // -------------------------------
-void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], TelemetryPacket &t)
-{
+void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], TelemetryPacket &t) {
   // --- NON-BLOCKING LOAD CELL READ ---
   if (loadCell.is_ready()) {
     // 1. Instantly grab the latest single value (does not wait)
-    long raw = loadCell.read(); 
+    long raw = loadCell.read();
     long corrected = raw - loadCellOffset;
     float current_force = corrected / loadCellCalibrationFactor;
 
@@ -45,28 +43,26 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     // 3. Store in telemetry packet
     t.loadCell = (int32_t)(filtered_force * 100);
   }
-  // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value 
+  // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value
   // and the loop keeps flying at maximum speed!
 
   // --- PRESSURE TRANSDUCERS ---
   // analogRead takes ~0.1 milliseconds, so doing 3 of them is totally fine
-  for (uint8_t i=0; i<NUM_PT; i++)
-  {
+  for (uint8_t i = 0; i < NUM_PT; i++) {
     float voltage = (analogRead(pressurePins[i]) / ADC_Resolution) * PT_RefV;
     float pressure = (voltage - PT_MinV[i]) * (PT_MaxP[i]) / (PT_MaxV - PT_MinV[i]);
 
     // if (pressure < 0) pressure = 0;
 
-    t.pressure[i] = pressure*100;
+    t.pressure[i] = pressure * 100;
 
     // Printing out for debugging
     Serial.print("Pressure Reading ");
     Serial.print(i);
     Serial.print(": ");
-    Serial.print((float)t.pressure[i]/100.0);
+    Serial.print((float)t.pressure[i] / 100.0);
     Serial.print("   ");
-    if (i == 2)
-    {
+    if (i == 2) {
       Serial.println();
     }
   }
@@ -76,14 +72,12 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
 // calibratePressure() Function
 // -------------------------------
 // Calibrating pressure sensors (returning voltage where psi = 0);
-float calibratePressure(uint8_t Pin_Num)
-{
+float calibratePressure(uint8_t Pin_Num) {
   // Averaging out many pressure readings (bin)
   long sum = 0;
-  for (uint8_t i=0; i<50; i++)
-  {
+  for (uint8_t i = 0; i < 50; i++) {
     sum += analogRead(Pin_Num);
-  } 
+  }
   float avgADC = sum / 50.0;
 
   // Printing out zeroed bin number
@@ -91,7 +85,7 @@ float calibratePressure(uint8_t Pin_Num)
   Serial.println(avgADC);
 
   // Calculating voltage where pressure is 0 psi (gauge)
-  float zeroV = 0.5; // (avgADC / ADC_Resolution) * PT_RefV;
+  float zeroV = (avgADC / ADC_Resolution) * PT_RefV;
 
   // Returnign 0 psi voltage measurment
   return zeroV;
@@ -101,10 +95,9 @@ float calibratePressure(uint8_t Pin_Num)
 // -------------------------------
 // tareLoadCell() Function
 // -------------------------------
-// Taring the load cell 
-long tareLoadCell(HX711 &loadCell)
-{
-  long offset = loadCell.read_average(10) ;
+// Taring the load cell
+long tareLoadCell(HX711 &loadCell) {
+  long offset = loadCell.read_average(10);
 
   return offset;
 }
