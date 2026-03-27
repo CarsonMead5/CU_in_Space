@@ -30,12 +30,12 @@ void initDisplays(LedControl &SevSD) {
   lcd1.setCursor(0, 0);
   lcd1.print("LC:");
   lcd1.setCursor(0, 1);
-  lcd1.print("PT0:   ");
+  lcd1.print("PT1 FI: ");
 
   lcd2.setCursor(0, 0);
-  lcd2.print("PT1:   ");
+  lcd2.print("PT2 OX:  ");
   lcd2.setCursor(0, 1);
-  lcd2.print("PT2:   ");
+  lcd2.print("PT3 CC:  ");
 }
 
 // -------------------------------
@@ -48,9 +48,9 @@ void updateDisplays(const TelemetryPacket &t, LedControl &SevSD) {
 
   // Update 7-Segment Displays
   displayNumber7SD(SevSD, 0, (long)(t.loadCell), 2);
-  displayNumber7SD(SevSD, 1, (long)(t.pressure[0]));
-  displayNumber7SD(SevSD, 2, (long)(t.pressure[1]));
-  displayNumber7SD(SevSD, 3, (long)(t.pressure[2]));
+  displayNumber7SD(SevSD, 1, (long)(t.pressure[0]/100));
+  displayNumber7SD(SevSD, 2, (long)(t.pressure[1]/100));
+  displayNumber7SD(SevSD, 3, (long)(t.pressure[2]/100));
 
   // Update LCD 1 (0x3E)
   lcd1.setCursor(8, 0);
@@ -63,16 +63,16 @@ void updateDisplays(const TelemetryPacket &t, LedControl &SevSD) {
   lcd1.print(" lb  ");  // The extra spaces "wipe" old digits
 
   lcd1.setCursor(8, 1);
-  lcd1.print(t.pressure[0] / 100.0, 1);
+  lcd1.print(t.pressure[0] / 100, 1);
   lcd1.print(" psi ");
 
   // Update LCD 2 (0x27)
   lcd2.setCursor(8, 0);
-  lcd2.print(t.pressure[1] / 100.0, 1);
+  lcd2.print(t.pressure[1] / 100, 1);
   lcd2.print(" psi ");
 
   lcd2.setCursor(8, 1);
-  lcd2.print(t.pressure[2] / 100.0, 1);
+  lcd2.print(t.pressure[2] / 100, 1);
   lcd2.print(" psi ");
 }
 
