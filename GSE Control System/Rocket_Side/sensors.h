@@ -13,7 +13,7 @@
 constexpr int32_t PT_MaxP[NUM_PT] = {1000,1600,1600};
 constexpr float PT_HardVMin[NUM_PT] = {0.5, 0.5, 0.5};
 constexpr float PT_MaxV = 4.5; // Maximum reading voltage of pressure transducers
-constexpr float PT_RefV = 5.31; // Used to calculating bin/psi
+constexpr float PT_RefV = 5; // Used to calculating bin/psi // ignore this it's hardcoded
 constexpr float ADC_Resolution = 1024.0; // Resolution of analog to digital converter
 
 // Load Cell Constants

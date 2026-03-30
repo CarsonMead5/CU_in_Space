@@ -50,10 +50,10 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
   for (uint8_t i = 0; i < NUM_PT; i++) {
     // 1. Read the raw ADC value and convert to Volts
     int rawADC = analogRead(pressurePins[i]);
-    float voltage = (rawADC / 1024.0) * 5.31;
+    float voltage = (rawADC / 1024.0) * 5;
 
     // 2. Subtract the 0.5V baseline, then multiply by the 400 psi/V slope
-    float pressure = (voltage - 0.5) * 400.0;
+    float pressure = (voltage - 0.5) * 400.0; // fix hardcode
 
     if (pressure < 0) {
       pressure = 0;

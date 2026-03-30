@@ -25,8 +25,8 @@ constexpr uint8_t LoRa_CS = 10;
 const uint8_t servoPins[NUM_SERVO] = {3,4,5,6};
 const uint32_t servoLOW[NUM_SERVO] = {500, 500, 500, 500 }; 
 const uint32_t servoHIGH[NUM_SERVO] = {1000, 1000, 1000, 1000}; 
-constexpr uint8_t solenoidPin = 8;
-constexpr uint8_t ematchPins[NUM_EMATCH] = {26,28};
+constexpr uint8_t solenoidPin = 35;
+constexpr uint8_t ematchPins[NUM_EMATCH] = {34,28};
 
 // -------------------------------
 // Sensor Configurations
