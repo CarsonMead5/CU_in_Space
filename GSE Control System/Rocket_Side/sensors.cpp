@@ -1,5 +1,8 @@
 #include "sensors.h"
 
+// Variable to track the latest raw value in the background
+long lastRawLoadCell = 0;
+
 // -------------------------------
 // initSensors() Function
 // -------------------------------
@@ -7,6 +10,7 @@
 void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[]) {
   // Serial.println("sensors 9");
   // Initializing load cell communication through HX711
+  Serial.println("    Beginning Load Cell...");
   loadCell.begin(loadCell_DT, loadCell_CLK);
   // Serial.println("sensors 12");
 
@@ -15,11 +19,12 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[]) {
   // Serial.println("sensors 16");
 
   // Calibrating pressure transducers
+  Serial.println("    Calibrating PTs... (this does nothing rn)");
   for (uint8_t i = 0; i < NUM_PT; i++) {
     PT_MinV[i] = PT_HardVMin[i];
     // calibratePressure(pressurePins[i]);
   }
-  // Serial.println("sensors 21");
+  Serial.println("sensors 24");
 }
 
 // -------------------------------
@@ -28,20 +33,19 @@ void initSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[]) {
 void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], TelemetryPacket &t) {
   // --- NON-BLOCKING LOAD CELL READ ---
   if (loadCell.is_ready()) {
-    // 1. Instantly grab the latest single value (does not wait)
-    long raw = loadCell.read();
-    long corrected = raw - loadCellOffset;
+    // 1. Instantly grab the latest single value and save it to our global tracker
+    lastRawLoadCell = loadCell.read(); // <--- UPDATED
+    long corrected = lastRawLoadCell - loadCellOffset;
     float current_force = corrected / loadCellCalibrationFactor;
 
     // 2. Apply a software smoothing filter (Exponential Moving Average)
-    // This perfectly replicates read_average(3) but takes 0.001 milliseconds!
-    // The 0.3 means "trust the new reading 30%, trust the history 70%"
     static float filtered_force = 0.0;
     filtered_force = (0.3 * current_force) + (0.7 * filtered_force);
 
     // 3. Store in telemetry packet
     t.loadCell = (int32_t)(filtered_force * 100);
   }
+
   // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value and the loop keeps going!
 
   // --- PRESSURE TRANSDUCERS ---
@@ -104,9 +108,9 @@ float calibratePressure(uint8_t Pin_Num) {
 // -------------------------------
 // tareLoadCell() Function
 // -------------------------------
-// Taring the load cell
+// Taring the load cell instantly without blocking the main loop
 long tareLoadCell(HX711 &loadCell) {
-  long offset = loadCell.read_average(10);
-
-  return offset;
+  // Instead of read_average(10) which freezes the Arduino, 
+  // we just instantly return the most recent raw reading!
+  return lastRawLoadCell;
 }

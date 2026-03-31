@@ -55,7 +55,7 @@ uint16_t servoActuationStart[NUM_SERVO] = { 0, 0, 0, 0 };
 // // Initializing previous command packet to eliminate duplicate sent commands
 CommandPacket lastCommand = { 0 };
 // // Initializing failsafe to close servos if no commands are sent
-uint16_t lastCommandTime = 0;
+unsigned long lastCommandTime = 0;
 uint16_t lastTelemetrySent = 0;
 
 
@@ -85,8 +85,8 @@ void setup() {
   SPI.begin();
 
   if (!LoRa.init()) {
-    Serial.println("LoRa init failed");
-    while (1);
+    Serial.println("LoRa init failed -- BYPASS");
+    // while (1);
   }
 
 
@@ -98,34 +98,48 @@ void setup() {
   LoRa.setCodingRate4(5);
   LoRa.setModeRx();  // Explicitly start listening
 
+
   // Initializing Sensors
+  Serial.println("Initializing Sensors...");
   initSensors(loadCell, loadCellOffset, PT_MinV);
 
+
   // Initializing Actuators
+  Serial.println("Initializing Actuators...");
   initActuators(servos);
 
   // OpenLog
+  Serial.println("Initializing OpenLog...");
   initLogger();
 
 
   // Printing to Console State
   Serial.println("Rocket-Side Arduino Ready");
+
+  // Start the failsafe timer
+  lastCommandTime = millis();
 }
 
 
-// -------------------------------
-// Main Loop
+// DEBUG NO LORA LOOP-------------------------------------------------
 // -------------------------------
 void loop() {
 
   // Reading Sensors
   readSensors(loadCell, loadCellOffset, PT_MinV, telemetry);
-
   // Reading Actuator States
   readActuatorStates(servos, telemetry);
 
   // Reading Current Time
   telemetry.timestamp = millis();
+
+  // --- TEMPORARY SENSOR PRINTING ---
+  static unsigned long lastPrintTime = 0;
+  if (millis() - lastPrintTime >= 500) {  // Prints every 500ms
+    debugSend(telemetry);
+    lastPrintTime = millis();
+  }
+  // ---------------------------------
 
   // ---------------- PACED LOGGING ----------------
   // Only write to the SD card every 50ms (20 Hz) to prevent 9600 baud buffer overflow
@@ -151,16 +165,17 @@ void loop() {
         CommandPacket temp;
         memcpy(&temp, buf, sizeof(CommandPacket));
 
+
         // 3. Extract and verify CRC
         uint16_t sentCRC = temp.crc;
         temp.crc = 0;  // Clear it for calculation
         uint16_t computedCRC = computeCRC16((uint8_t*)&temp, sizeof(CommandPacket) - sizeof(temp.crc));
 
         if (sentCRC == computedCRC) {
+          lastCommandTime = millis(); // <--- ADD THIS LINE HERE
           lastCommand = command;  // Save previous state
           command = temp;         // Update current state
           command.crc = sentCRC;  // Put the CRC back for debugging
-
           debugReceive(command);
           avail_flag = true;  // Packet is verified and ready!
         } else {
@@ -172,7 +187,6 @@ void loop() {
   }
 
   // Acting on Commands
-  // If statement is not entered if no commands were received or packets did not pass crc check
   if (avail_flag) {
     applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
 
@@ -181,6 +195,26 @@ void loop() {
       loadCellOffset = tareLoadCell(loadCell);
     }
     sendTelemetry(LoRa, telemetry);
+    
+  } else if (millis() - lastCommandTime >= 120000) {
+    // ---------------- AUTONOMOUS ABORT ----------------
+    // If telemetry is lost for 10 seconds, force abort state
+    
+    lastCommand = command; // Save state so applyActuateCommands detects the edge change
+
+    // Override the current command with the safe state
+    command.servoState[0] = false; // SW 1 FILL: 0
+    command.servoState[1] = false; // SW 2 TANK: 0
+    command.servoState[2] = true;  // SW 3 VENT: 1
+    command.servoState[3] = true;  // SW 4 DUMP: 1
+    command.solenoidState = false; // SW 5 SOLENOID: 0
+    command.armedState = false;    // SW 6 ARM: 0
+    command.ematchState[0] = false;// SW 7 IGNITE 1: 0
+    command.ematchState[1] = false;// SW 8 IGNITE 2: 0
+
+    // Apply the abort commands
+    applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
+    Serial.println("TELEM LOST >10 seconds - ABORT - VENTING TANK");
   }
 
   updateServos(servos, servoAttachState, servoActuationStart);  // always detach servos 250 ms after actuating
