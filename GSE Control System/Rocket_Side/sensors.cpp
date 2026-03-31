@@ -42,18 +42,22 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     // 3. Store in telemetry packet
     t.loadCell = (int32_t)(filtered_force * 100);
   }
-  // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value
-  // and the loop keeps flying at maximum speed!
+  // If the HX711 isn't ready yet, t.loadCell simply keeps its previous value and the loop keeps going!
 
   // --- PRESSURE TRANSDUCERS ---
   // analogRead takes ~0.1 milliseconds, so doing 3 of them is totally fine
   for (uint8_t i = 0; i < NUM_PT; i++) {
-    // 1. Read the raw ADC value and convert to Volts
+    // 1. Read the raw ADC value and convert to Volts using config definitions
     int rawADC = analogRead(pressurePins[i]);
-    float voltage = (rawADC / 1024.0) * 5;
+    float voltage = (rawADC / ADC_Resolution) * PT_RefV;
 
-    // 2. Subtract the 0.5V baseline, then multiply by the 400 psi/V slope
-    float pressure = (voltage - 0.5) * 400.0; // fix hardcode
+    // 2. Calculate the specific slope (psi/V) for this transducer
+    // Slope = Max Pressure / Voltage Range
+    float voltageRange = PT_MaxV - PT_MinV[i];
+    float slope = PT_MaxP[i] / voltageRange;
+
+    // 3. Subtract the baseline, then multiply by the calculated slope
+    float pressure = (voltage - PT_MinV[i]) * slope; 
 
     if (pressure < 0) {
       pressure = 0;
@@ -73,7 +77,6 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
     // }
   }
 }
-
 // -------------------------------
 // calibratePressure() Function
 // -------------------------------
