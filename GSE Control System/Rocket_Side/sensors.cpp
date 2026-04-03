@@ -82,7 +82,7 @@ void readSensors(HX711 &loadCell, long &loadCellOffset, float PT_MinV[], Telemet
   }
 }
 // -------------------------------
-// calibratePressure() Function
+// calibratePressure() Function // ignore this whole john it does nothing
 // -------------------------------
 // Calibrating pressure sensors (returning voltage where psi = 0);
 float calibratePressure(uint8_t Pin_Num) {

@@ -1,5 +1,5 @@
 // Arduino Mega Code for Rocket Side GSE System
-// Contributors: Carson Mead, Ryan Chen, Nussbaumer
+// Contributors: Carson Mead, Ryan Chen, Lucas Nussbaumer
 // Date Modified: 3/12/26
 
 // -------------------------------
