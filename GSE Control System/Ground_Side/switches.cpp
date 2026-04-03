@@ -7,17 +7,17 @@ void initSwitches() {
 
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {
-    pinMode(Pin_Servos[i],INPUT_PULLUP);
+    pinMode(Pin_Servos[i],INPUT);
   }
-  pinMode(Pin_Solenoid,INPUT_PULLUP);
+  pinMode(Pin_Solenoid,INPUT);
   for (uint8_t i=0; i<NUM_EMATCH; i++)
   {
-    pinMode(Pin_Ematches[i],INPUT_PULLUP);
+    pinMode(Pin_Ematches[i],INPUT);
   }
-  pinMode(Pin_Arm,INPUT_PULLUP);
-  pinMode(Pin_AbortSwitch,INPUT_PULLUP);
-  pinMode(Pin_LoadCellTare,INPUT_PULLUP);
-  pinMode(Pin_SpareTare,INPUT_PULLUP);
+  pinMode(Pin_Arm,INPUT);
+  pinMode(Pin_AbortSwitch,INPUT);
+  pinMode(Pin_LoadCellTare,INPUT);
+  pinMode(Pin_SpareTare,INPUT);
 }
 
 
@@ -29,17 +29,17 @@ void readSwitches(CommandPacket &cmd) {
   // Servo Commands
   for (uint8_t i=0; i<NUM_SERVO; i++)
   {
-    cmd.servoState[i] = !digitalRead(Pin_Servos[i]);
+    cmd.servoState[i] = digitalRead(Pin_Servos[i]);
   }
 
   // Solenoid Command
-  cmd.solenoidState = !digitalRead(Pin_Solenoid);
+  cmd.solenoidState = digitalRead(Pin_Solenoid);
 
   // Ematch Commands
-  cmd.armedState = !digitalRead(Pin_Arm);
+  cmd.armedState = digitalRead(Pin_Arm);
   for (uint8_t i=0; i<NUM_EMATCH; i++)
   {
-    cmd.ematchState[i] = !digitalRead(Pin_Ematches[i]);
+    cmd.ematchState[i] = digitalRead(Pin_Ematches[i]);
   }
 
   // Abort State
@@ -57,7 +57,7 @@ void readSwitches(CommandPacket &cmd) {
   }
 
   // Tare Command
-  if (!digitalRead(Pin_LoadCellTare)) {
+  if (digitalRead(Pin_LoadCellTare)) {
     cmd.tareLoadCellState = true;
   }
   else
