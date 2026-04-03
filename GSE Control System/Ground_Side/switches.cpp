@@ -43,15 +43,17 @@ void readSwitches(CommandPacket &cmd) {
   }
 
   // Abort State
-  if (!digitalRead(Pin_AbortSwitch)) {
+  if (digitalRead(Pin_AbortSwitch)) {
 
+    // close fill, close solenoid, turn off ematches, vent line and tank.
     cmd.servoState[0] = false;
-    cmd.servoState[1] = false;
-    cmd.servoState[2] = false;
+    cmd.servoState[1] = true;
+    cmd.servoState[2] = true; 
     cmd.servoState[3] = true;
     cmd.solenoidState = false;
+    cmd.armedState = false;
     cmd.ematchState[0] = false;
-    cmd.ematchState[0] = false;
+    cmd.ematchState[1] = false;
   }
 
   // Tare Command

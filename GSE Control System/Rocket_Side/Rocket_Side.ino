@@ -196,7 +196,7 @@ void loop() {
     }
     sendTelemetry(LoRa, telemetry);
     
-  } else if (millis() - lastCommandTime >= 120000) {
+  } else if (millis() - lastCommandTime >= 10000) {
     // ---------------- AUTONOMOUS ABORT ----------------
     // If telemetry is lost for 10 seconds, force abort state
     
@@ -204,13 +204,14 @@ void loop() {
 
     // Override the current command with the safe state
     command.servoState[0] = false; // SW 1 FILL: 0
-    command.servoState[1] = false; // SW 2 TANK: 0
+    command.servoState[1] = true; // SW 2 TANK: 1
     command.servoState[2] = true;  // SW 3 VENT: 1
     command.servoState[3] = true;  // SW 4 DUMP: 1
     command.solenoidState = false; // SW 5 SOLENOID: 0
     command.armedState = false;    // SW 6 ARM: 0
     command.ematchState[0] = false;// SW 7 IGNITE 1: 0
     command.ematchState[1] = false;// SW 8 IGNITE 2: 0
+   
 
     // Apply the abort commands
     applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
