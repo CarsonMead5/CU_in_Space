@@ -128,6 +128,8 @@ void loop() {
         // debugReceive(telemetry); // Uncomment if debugReceive is fully implemented
         
         break; // Exit the listening window early since we got our data
+
+        break;  // Exit the listening window early since we got our data
       }
     }
   }
