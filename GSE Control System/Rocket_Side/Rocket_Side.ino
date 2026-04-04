@@ -199,8 +199,6 @@ void loop() {
   } else if (millis() - lastCommandTime >= 10000) {
     // ---------------- AUTONOMOUS ABORT ----------------
     // If telemetry is lost for 10 seconds, force abort state
-    
-    lastCommand = command; // Save state so applyActuateCommands detects the edge change
 
     // Override the current command with the safe state
     command.servoState[0] = false; // SW 1 FILL: 0
@@ -215,6 +213,9 @@ void loop() {
 
     // Apply the abort commands
     applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
+
+    lastCommand = command; // Save state so applyActuateCommands detects the edge change
+
     Serial.println("TELEM LOST >10 seconds - ABORT - VENTING TANK");
   }
 
