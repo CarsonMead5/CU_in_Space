@@ -94,8 +94,8 @@ float calibratePressure(uint8_t Pin_Num) {
   float avgADC = sum / 50.0;
 
   // Printing out zeroed bin number
-  Serial.print("Average PT ADC Calculated: ");
-  Serial.println(avgADC);
+  // Serial.print("Average PT ADC Calculated: ");
+  // Serial.println(avgADC);
 
   // Calculating voltage where pressure is 0 psi (gauge)
   // Updated to use the 5.31V reference and 1024.0 divisor

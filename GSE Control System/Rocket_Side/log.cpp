@@ -5,14 +5,14 @@
 // -------------------------------
 void initLogger()
 {
-  // Opening up serial channel 1 (9600 baud)
-  Serial1.begin(115200);
+  // Opening up serial channel 1 (230400 baud)
+  Serial1.begin(230400);
   
   // Give the OpenLog 1 second to wake up and generate its automatic LOGxxxxx.TXT file
   delay(1000);
 
   // Entering csv header
-  Serial1.println("Time(ms),PT0(psi),PT1(psi),PT2(psi),LoadCell(lb)");
+  Serial1.println("Time(micros),PT0(psi),PT1(psi),PT2(psi),LoadCell(lb)");
 }
 
 // -------------------------------

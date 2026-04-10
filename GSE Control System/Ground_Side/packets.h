@@ -22,7 +22,7 @@ struct TelemetryPacket
   int32_t loadCell; // Load cell measurement (lb) *100 (lessens storage space and keeps 2 decimal places)
   uint8_t servoPos[NUM_SERVO];
   bool solenoidState;
-  uint32_t timestamp;
+  unsigned long timestamp;
 };
 
 // Initialization of Command Packet

@@ -56,7 +56,9 @@ uint16_t servoActuationStart[NUM_SERVO] = { 0, 0, 0, 0 };
 CommandPacket lastCommand = { 0 };
 // // Initializing failsafe to close servos if no commands are sent
 unsigned long lastCommandTime = 0;
-uint16_t lastTelemetrySent = 0;
+uint16_t lastTelemetryTime = 0;
+uint32_t lastLoadMeas = 0;
+long lastLoRaResetTime = millis();
 
 
 // -------------------------------
@@ -66,7 +68,6 @@ uint16_t lastTelemetrySent = 0;
 // -------------------------------
 
 void setup() {
-
 
 
   // Opening Serial Monitor (For Debugging)
@@ -127,24 +128,25 @@ void loop() {
 
   // Reading Sensors
   readSensors(loadCell, loadCellOffset, PT_MinV, telemetry);
+
   // Reading Actuator States
   readActuatorStates(servos, telemetry);
 
   // Reading Current Time
-  telemetry.timestamp = millis();
+  telemetry.timestamp = micros();
 
   // --- TEMPORARY SENSOR PRINTING ---
   static unsigned long lastPrintTime = 0;
-  if (millis() - lastPrintTime >= 500) {  // Prints every 500ms
+  if (millis() - lastPrintTime >= 1000) {  // Prints every 1000ms (1s)
     debugSend(telemetry);
     lastPrintTime = millis();
   }
   // ---------------------------------
 
   // ---------------- PACED LOGGING ----------------
-  // Only write to the SD card every 50ms (20 Hz) to prevent 9600 baud buffer overflow
+  // Only write to the SD card every 5ms (200 Hz) to prevent 250000 baud buffer overflow
   static unsigned long lastLogTime = 0;
-  if (millis() - lastLogTime >= 50) {
+  if (millis() - lastLogTime >= 5) {
     logTelemetry(telemetry);
     lastLogTime = millis();
   }
@@ -164,7 +166,6 @@ void loop() {
         // 2. Temporarily hold data to verify CRC (ONLY runs if size is correct)
         CommandPacket temp;
         memcpy(&temp, buf, sizeof(CommandPacket));
-
 
         // 3. Extract and verify CRC
         uint16_t sentCRC = temp.crc;
@@ -196,9 +197,40 @@ void loop() {
     }
     sendTelemetry(LoRa, telemetry);
     
-  } else if (millis() - lastCommandTime >= 10000) {
+  } 
+  else if (millis() - lastCommandTime >= 5000)
+  {
+    if (millis() - lastLoRaResetTime >= 5000) {
+      Serial.println("Telemetry lost: Attempting LoRa Reset...");
+      
+      // Hardware Reset
+      digitalWrite(LoRa_RST, LOW);
+      delay(10);
+      digitalWrite(LoRa_RST, HIGH);
+      delay(10);
+
+      // Re-initialize and Re-configure
+      if (!LoRa.init()) {
+        Serial.println("LoRa re-init failed!");
+        return;
+      }
+
+      // Must match your setup() settings exactly
+      LoRa.setFrequency(915.0);
+      LoRa.setTxPower(19, false);
+      LoRa.setSpreadingFactor(7);
+      LoRa.setSignalBandwidth(125E3);
+      LoRa.setCodingRate4(5);
+      LoRa.setModeRx();
+      
+      Serial.println("LoRa Reset Complete. Listening...");
+
+      lastLoRaResetTime = millis();
+    }
+  }
+  else if (millis() - lastCommandTime >= 30000) {
     // ---------------- AUTONOMOUS ABORT ----------------
-    // If telemetry is lost for 10 seconds, force abort state
+    // If telemetry is lost for 30 seconds, force abort state
 
     // Override the current command with the safe state
     command.servoState[0] = false; // SW 1 FILL: 0
@@ -213,10 +245,16 @@ void loop() {
 
     // Apply the abort commands
     applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
+    delay(100);
+    applyActuateCommands(servos, servoAttachState, servoActuationStart, lastCommand, command);
 
     lastCommand = command; // Save state so applyActuateCommands detects the edge change
 
     Serial.println("TELEM LOST >10 seconds - ABORT - VENTING TANK");
+    Serial.print("S1: ");
+    Serial.print(command.servoState[0]);
+    Serial.print(" S2: ");
+    Serial.println(command.servoState[1]);
   }
 
   updateServos(servos, servoAttachState, servoActuationStart);  // always detach servos 250 ms after actuating

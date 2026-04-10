@@ -22,7 +22,7 @@ struct TelemetryPacket
   int32_t loadCell;          // <--- MAKE SURE THIS SAYS int32_t
   uint8_t servoPos[NUM_SERVO];
   bool solenoidState;
-  uint32_t timestamp;
+  unsigned long timestamp;
 };
 
 // Initialization of Command Packet

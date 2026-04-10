@@ -49,6 +49,8 @@ CommandPacket command = { 0 };
 
 // Initializing last packet sent variable
 long lastPacketSent = millis();
+long lastTelemetryTime = millis();
+long lastLoRaResetTime = millis();
 
 
 // -------------------------------
@@ -125,12 +127,44 @@ void loop() {
         memcpy(&telemetry, buf, sizeof(TelemetryPacket));
         
         Serial.println("Packet successfully received!");
+        lastTelemetryTime = millis();
         // debugReceive(telemetry); // Uncomment if debugReceive is fully implemented
         
         break; // Exit the listening window early since we got our data
 
         break;  // Exit the listening window early since we got our data
       }
+    }
+  }
+
+  if (millis() - lastTelemetryTime >= 5000)
+  {
+    if (millis() - lastLoRaResetTime >= 5000) {
+      Serial.println("Telemetry lost: Attempting LoRa Reset...");
+      
+      // Hardware Reset
+      digitalWrite(LoRa_RST, LOW);
+      delay(10);
+      digitalWrite(LoRa_RST, HIGH);
+      delay(10);
+
+      // Re-initialize and Re-configure
+      if (!LoRa.init()) {
+        Serial.println("LoRa re-init failed!");
+        return;
+      }
+
+      // Must match your setup() settings exactly
+      LoRa.setFrequency(915.0);
+      LoRa.setTxPower(19, false);
+      LoRa.setSpreadingFactor(7);
+      LoRa.setSignalBandwidth(125E3);
+      LoRa.setCodingRate4(5);
+      LoRa.setModeRx();
+      
+      Serial.println("LoRa Reset Complete. Listening...");
+
+      lastLoRaResetTime = millis();
     }
   }
 
