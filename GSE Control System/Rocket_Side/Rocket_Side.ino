@@ -198,7 +198,7 @@ void loop() {
     sendTelemetry(LoRa, telemetry);
     
   } 
-  else if (millis() - lastCommandTime >= 5000)
+  else if ((millis() - lastCommandTime >= 5000) && (millis() - lastCommandTime < 30000))
   {
     if (millis() - lastLoRaResetTime >= 5000) {
       Serial.println("Telemetry lost: Attempting LoRa Reset...");
@@ -226,6 +226,10 @@ void loop() {
       Serial.println("LoRa Reset Complete. Listening...");
 
       lastLoRaResetTime = millis();
+      // Serial.print("Last Command Time: ");
+      // Serial.print(lastCommandTime);
+      // Serial.print("Current Time: ")
+      // Serial.println( millis() );
     }
   }
   else if (millis() - lastCommandTime >= 30000) {
