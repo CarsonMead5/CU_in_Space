@@ -17,7 +17,7 @@ void initLoRa(RH_RF95 &LoRa)
   digitalWrite(LoRa_RST, LOW);
   delay(10);
   digitalWrite(LoRa_RST, HIGH);
-  delay(10);
+  delay(50);
 
   // Checking LoRa Initialization
   if (!LoRa.init())

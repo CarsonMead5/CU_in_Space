@@ -1,58 +1,36 @@
-// LoRa Transmitter Test
 #include <SPI.h>
 #include <RH_RF95.h>
 
-// Establishing radio ports and variables
-#define RFM95_CS 10
-#define RFM95_RST 9
-#define RFM95_INT 2
-#define RF95_FREQ 915.0
+#define LoRa_INT 2
+#define LoRa_RST 9
+#define LoRa_CS 10
 
-// Establishing radio object
-RH_RF95 rf95(RFM95_CS, RFM95_INT);
-
-// Packet to send over 
-float sensorValue = 0.0;
+RH_RF95 LoRa(LoRa_CS, LoRa_INT);
 
 void setup() {
-  
-  pinMode(RFM95_RST, OUTPUT);
-  digitalWrite(RFM95_RST,HIGH);
-
   Serial.begin(9600);
-  delay(1000);
+  while (!Serial); // Wait for serial to connect
 
-  digitalWrite(RFM95_RST, LOW);
+  Serial.println("--- LoRa Bare Minimum Test ---");
+
+  pinMode(LoRa_RST, OUTPUT);
+  digitalWrite(LoRa_RST, HIGH);
+  delay(100);
+
+  Serial.println("1. Resetting Module...");
+  digitalWrite(LoRa_RST, LOW);
   delay(10);
-  digitalWrite(RFM95_RST, HIGH);
-  delay(10);
+  digitalWrite(LoRa_RST, HIGH);
+  delay(50);
 
-  SPI.begin();
-
-  if(!rf95.init()) {
-    Serial.println("LoRa Initialization Failed");
-    while(1);
+  Serial.println("2. Testing SPI Connection...");
+  if (!LoRa.init()) {
+    Serial.println("FAIL: Arduino cannot see the LoRa chip!");
+    Serial.println("Check MISO/MOSI wiring, CS pin, and power.");
+    while (1);
   }
-
-  rf95.setFrequency(RF95_FREQ);
-  rf95.setTxPower(23, false);
-
-  Serial.println("LoRa Float Transmitter Ready");
+  
+  Serial.println("SUCCESS: LoRa Module initialized perfectly!");
 }
 
-void loop() {
-
-  // Printing to serial monitor
-  Serial.print("Sending float: ");
-  Serial.println(sensorValue);
-
-  // Sending signal
-  rf95.send((uint8_t*)&sensorValue, sizeof(sensorValue));
-  rf95.waitPacketSent();
-
-  // Incrementing sensor value
-  sensorValue = sensorValue + 0.3f;
-
-  // Delaying 1 second
-  delay(1000);
-}
+void loop() {}

@@ -173,7 +173,17 @@ void loop() {
         uint16_t computedCRC = computeCRC16((uint8_t*)&temp, sizeof(CommandPacket) - sizeof(temp.crc));
 
         if (sentCRC == computedCRC) {
-          lastCommandTime = millis(); // <--- ADD THIS LINE HERE
+
+          // ---  SWAP LOGIC - swapping dump and solenoid bools---
+          // Intercept ground commands to swap Switch 4 and Switch 5
+          bool actualSwitch4 = temp.servoState[3]; // Ground's SW 4
+          bool actualSwitch5 = temp.solenoidState; // Ground's SW 5
+
+          temp.servoState[3] = actualSwitch5; // Map SW 5 to the 4th servo (Dump)
+          temp.solenoidState = actualSwitch4; // Map SW 4 to the Solenoid
+
+
+          lastCommandTime = millis();
           lastCommand = command;  // Save previous state
           command = temp;         // Update current state
           command.crc = sentCRC;  // Put the CRC back for debugging
@@ -237,11 +247,15 @@ void loop() {
     // If telemetry is lost for 30 seconds, force abort state
 
     // Override the current command with the safe state
+
+    // Override the current command with the safe state
     command.servoState[0] = false; // SW 1 FILL: 0
     command.servoState[1] = true; // SW 2 TANK: 1
     command.servoState[2] = true;  // SW 3 VENT: 1
-    command.servoState[3] = true;  // SW 4 DUMP: 1
-    command.solenoidState = false; // SW 5 SOLENOID: 0
+    // these bools are correct, but note the comments because the swap occurs above
+    command.servoState[3] = true;  // SW 5 DUMP: 1 (Was SW 4)
+    command.solenoidState = false; // SW 4 SOLENOID: 0 (Was SW 5)
+
     command.armedState = false;    // SW 6 ARM: 0
     command.ematchState[0] = false;// SW 7 IGNITE 1: 0
     command.ematchState[1] = false;// SW 8 IGNITE 2: 0
@@ -254,7 +268,7 @@ void loop() {
 
     lastCommand = command; // Save state so applyActuateCommands detects the edge change
 
-    Serial.println("TELEM LOST >10 seconds - ABORT - VENTING TANK");
+    Serial.println("TELEM LOST >30 seconds - ABORT - VENTING TANK");
     Serial.print("S1: ");
     Serial.print(command.servoState[0]);
     Serial.print(" S2: ");

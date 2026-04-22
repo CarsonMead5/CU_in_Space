@@ -146,12 +146,17 @@ void loop() {
       digitalWrite(LoRa_RST, LOW);
       delay(10);
       digitalWrite(LoRa_RST, HIGH);
-      delay(10);
+      
+      // FIX 1: Give the radio more time to wake up before calling init()
+      delay(50); 
+
+      // FIX 2: Update the timer HERE instead of at bottom, regardless of if init() succeeds or fails
+      lastLoRaResetTime = millis(); 
 
       // Re-initialize and Re-configure
       if (!LoRa.init()) {
         Serial.println("LoRa re-init failed!");
-        return;
+        return; // now safely exit the loop and wait 5 sec to try again
       }
 
       // Must match your setup() settings exactly
@@ -163,8 +168,6 @@ void loop() {
       LoRa.setModeRx();
       
       Serial.println("LoRa Reset Complete. Listening...");
-
-      lastLoRaResetTime = millis();
     }
   }
 
